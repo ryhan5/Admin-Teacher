@@ -28,6 +28,8 @@ const teacherSchema = new mongoose.Schema({
   streams: [String],
   subjects: [String],
   registerNumber: String,
+  // mcaTeacher: [Boolean, false]
+  "mcaTeacher": {type: String, default: false}
 });
 
 const Teacher = mongoose.model("Teacher", teacherSchema);
