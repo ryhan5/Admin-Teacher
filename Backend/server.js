@@ -28,44 +28,68 @@ const teacherSchema = new mongoose.Schema({
   streams: [String],
   subjects: [String],
   registerNumber: String,
-  // mcaTeacher: [Boolean, false]
-  "mcaTeacher": {type: String, default: false}
+  mcaTeacher: { type: Boolean, default: false }, // Changed to Boolean
 });
 
 const Teacher = mongoose.model("Teacher", teacherSchema);
 
+const adminSchema = new mongoose.Schema({
+  adminId: String,
+  password: String,
+});
+
+const Admin = mongoose.model("Admin", adminSchema);
+
+// Prepopulate with 5 admins (run this only once)
+const createAdmins = async () => {
+  const admins = [
+    { adminId: "admin", password: "pass"},
+    { adminId: "admin02", password: await bcrypt.hash("password02", 10) },
+    { adminId: "admin03", password: await bcrypt.hash("password03", 10) },
+    { adminId: "admin04", password: await bcrypt.hash("password04", 10) },
+    { adminId: "admin05", password: await bcrypt.hash("password05", 10) },
+  ];
+
+  await Admin.insertMany(admins);
+  console.log("Admin accounts created");
+};
+// Uncomment this line to create the admins (run this once and then comment it back)
+// createAdmins();
+
+
 // Helper function to generate register number
-const generateRegisterNumber = async (joiningYear, streamCode) => {
+const generateRegisterNumber = async (joiningYear, streamCodes) => {
+  const sumStreamCodes = streamCodes.reduce((sum, code) => sum + parseInt(code), 0);
+  const sumStr = sumStreamCodes.toString().padStart(2, "0").slice(-2); // Take the last two digits of the sum
+
   const count = (await Teacher.countDocuments({})) + 1;
   const countStr = count.toString().padStart(4, "0");
-  return `${joiningYear}${streamCode}${countStr}`;
+  return `${joiningYear}${sumStr}${countStr}`;
 };
 
 // Endpoint to register a teacher
 app.post("/api/register-teacher", async (req, res) => {
-  const { name, joiningDate, password, birthDate, streams, subjects } =
-    req.body;
+  const { name, joiningDate, password, birthDate, streams, subjects } = req.body;
 
   try {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Assuming the first selected stream is used for register number generation
     const joiningYear = joiningDate.slice(0, 4);
-    const stream = streams[0];
-    const streamCodes = {
-      BTech: "42",
-      MCA: "74",
-      MBA: "46",
-      BArch: "58",
-      BA: "06",
-      MTech: "22",
+
+    const streamCodeMap = {
+      BTech: "06",
+      MCA: "07",
+      MBA: "05",
+      BArch: "08",
+      BA: "09",
+      MTech: "10",
     };
-    const streamCode = streamCodes[stream] || "00";
-    const registerNumber = await generateRegisterNumber(
-      joiningYear,
-      streamCode
-    );
+
+    // Map selected streams to their respective codes
+    const selectedStreamCodes = streams.map(stream => streamCodeMap[stream] || "00");
+
+    const registerNumber = await generateRegisterNumber(joiningYear, selectedStreamCodes);
 
     const newTeacher = new Teacher({
       name,
@@ -123,6 +147,62 @@ app.get("/api/teacher/:registerNumber", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching teacher data" });
+  }
+});
+
+// Endpoint to give authentication to the admin
+app.post("/api/admin-auth", async (req, res) => {
+  const { adminId, adminPassword } = req.body;
+  
+  try {
+    const admin = await Admin.findOne({ adminId });
+    if (!admin) {
+      return res.status(400).json({ success: false, message: "Invalid admin ID or password" });
+    }
+
+    const isMatch = await bcrypt.compare(adminPassword, admin.password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: "Invalid admin ID or password" });
+    }
+
+    const teachers = await Teacher.find({});
+    res.status(200).json({ success: true, teachers });
+  } catch (error) {
+    console.error("Error authenticating admin:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Endpoint to edit a teacher
+app.put("/api/teacher/:registerNumber", async (req, res) => {
+  const { registerNumber } = req.params;
+  const updatedData = req.body;
+
+  try {
+    const teacher = await Teacher.findOneAndUpdate({ registerNumber }, updatedData, { new: true });
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+    res.status(200).json({ message: "Teacher updated successfully", teacher });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating teacher" });
+  }
+});
+
+// Endpoint to delete a teacher
+app.delete("/api/teacher/:registerNumber", async (req, res) => {
+  const { registerNumber } = req.params;
+
+  try {
+    const teacher = await Teacher.findOneAndDelete({ registerNumber });
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+    res.status(200).json({ message: "Teacher deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error deleting teacher" });
   }
 });
 

@@ -5,6 +5,7 @@ import TeacherPage from './Components/TeacherPage';
 import StudentPage from './Components/StudentPage';
 import SignInPage from './Components/SignInPage';
 import TeacherDashboard from './Components/TeacherDashboard';
+import TeachersDataPage from './Components/TeacherDataPage';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/" element={<AdminPage />} />
+          <Route path="/teachers-data" element={<TeachersDataPage />} />
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/dashboard/:registerNumber" element={<TeacherDashboard />} />
           <Route path="/teacher" element={<TeacherPage />} />
