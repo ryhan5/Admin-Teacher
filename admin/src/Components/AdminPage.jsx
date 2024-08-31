@@ -6,18 +6,21 @@ const AdminPage = () => {
   const navigate = useNavigate();
 
   const handleAdminAuth = async () => {
+    const defaultAdminId = 'admin'; // Replace with your default admin ID
+    const defaultAdminPassword = 'pass'; // Replace with your default admin password
+  
     const adminId = prompt("Enter Admin ID:");
     const adminPassword = prompt("Enter Admin Password:");
-
+  
     try {
       const response = await fetch('http://localhost:5000/api/admin-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ adminId, adminPassword }),
       });
-
+  
       const data = await response.json();
-
+  
       if (data.success) {
         navigate('/teachers-data'); // Navigate to the teachers' data page
       } else {
@@ -28,6 +31,8 @@ const AdminPage = () => {
       setAuthError('Server error, please try again later.');
     }
   };
+
+  
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-700">

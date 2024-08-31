@@ -40,10 +40,10 @@ const adminSchema = new mongoose.Schema({
 
 const Admin = mongoose.model("Admin", adminSchema);
 
-// Prepopulate with 5 admins (run this only once)
+// // Prepopulate with 5 admins (run this only once)
 const createAdmins = async () => {
   const admins = [
-    { adminId: "admin", password: "pass"},
+    { adminId: "admin01", password: await bcrypt.hash("password01", 10) },
     { adminId: "admin02", password: await bcrypt.hash("password02", 10) },
     { adminId: "admin03", password: await bcrypt.hash("password03", 10) },
     { adminId: "admin04", password: await bcrypt.hash("password04", 10) },
@@ -66,6 +66,18 @@ const generateRegisterNumber = async (joiningYear, streamCodes) => {
   const countStr = count.toString().padStart(4, "0");
   return `${joiningYear}${sumStr}${countStr}`;
 };
+
+// Ensure you have this endpoint in your Express server
+app.get('/api/teachers', async (req, res) => {
+  try {
+    const teachers = await Teacher.find({});
+    res.status(200).json({ teachers });
+  } catch (error) {
+    console.error("Error fetching teachers:", error);
+    res.status(500).json({ message: "Error fetching teachers data" });
+  }
+});
+
 
 // Endpoint to register a teacher
 app.post("/api/register-teacher", async (req, res) => {
@@ -150,10 +162,11 @@ app.get("/api/teacher/:registerNumber", async (req, res) => {
   }
 });
 
+
 // Endpoint to give authentication to the admin
 app.post("/api/admin-auth", async (req, res) => {
   const { adminId, adminPassword } = req.body;
-  
+
   try {
     const admin = await Admin.findOne({ adminId });
     if (!admin) {
@@ -172,6 +185,7 @@ app.post("/api/admin-auth", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 // Endpoint to edit a teacher
 app.put("/api/teacher/:registerNumber", async (req, res) => {

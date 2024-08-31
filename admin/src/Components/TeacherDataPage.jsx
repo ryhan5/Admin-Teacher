@@ -7,18 +7,13 @@ const TeachersDataPage = () => {
   useEffect(() => {
     const fetchTeachers = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/admin-auth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          // Use stored admin credentials or reauthenticate
-          body: JSON.stringify({ adminId: 'admin', adminPassword: 'pass' }),
-        });
-
+        const response = await fetch('http://localhost:5000/api/teachers');
         const data = await response.json();
-        if (data.success) {
+
+        if (response.ok) {
           setTeachers(data.teachers);
         } else {
-          setError(data.message);
+          setError(data.message || 'Failed to fetch teachers data.');
         }
       } catch (error) {
         console.error("Error fetching teachers' data:", error);
@@ -29,14 +24,64 @@ const TeachersDataPage = () => {
     fetchTeachers();
   }, []);
 
-  const handleEdit = (registerNumber) => {
-    // Implement edit functionality
-    console.log(`Edit teacher with register number: ${registerNumber}`);
+  const handleEdit = async (registerNumber) => {
+    const teacherToEdit = teachers.find((teacher) => teacher.registerNumber === registerNumber);
+    if (teacherToEdit) {
+      const newName = prompt("Enter new name:", teacherToEdit.name);
+      const newJoiningDate = prompt("Enter new joining date:", teacherToEdit.joiningDate);
+
+      if (newName && newJoiningDate) {
+        try {
+          const response = await fetch(`http://localhost:5000/api/teacher/${registerNumber}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName, joiningDate: newJoiningDate }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            setTeachers((prevTeachers) =>
+              prevTeachers.map((teacher) =>
+                teacher.registerNumber === registerNumber
+                  ? { ...teacher, name: newName, joiningDate: newJoiningDate }
+                  : teacher
+              )
+            );
+            alert("Teacher updated successfully!");
+          } else {
+            alert(data.message || 'Failed to update teacher.');
+          }
+        } catch (error) {
+          console.error('Error updating teacher:', error);
+          alert('Server error, please try again later.');
+        }
+      }
+    }
   };
 
-  const handleDelete = (registerNumber) => {
-    // Implement delete functionality
-    console.log(`Delete teacher with register number: ${registerNumber}`);
+  const handleDelete = async (registerNumber) => {
+    if (window.confirm(`Are you sure you want to delete the teacher with register number ${registerNumber}?`)) {
+      try {
+        const response = await fetch(`http://localhost:5000/api/teacher/${registerNumber}`, {
+          method: 'DELETE',
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setTeachers((prevTeachers) =>
+            prevTeachers.filter((teacher) => teacher.registerNumber !== registerNumber)
+          );
+          alert("Teacher deleted successfully!");
+        } else {
+          alert(data.message || 'Failed to delete teacher.');
+        }
+      } catch (error) {
+        console.error('Error deleting teacher:', error);
+        alert('Server error, please try again later.');
+      }
+    }
   };
 
   return (
@@ -79,7 +124,7 @@ const TeachersDataPage = () => {
                     </button>
                     <button
                       onClick={() => handleDelete(teacher.registerNumber)}
-                      className="bg-red-600"
+                      className="bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600"
                     >
                       Delete
                     </button>
@@ -95,4 +140,3 @@ const TeachersDataPage = () => {
 };
 
 export default TeachersDataPage;
-

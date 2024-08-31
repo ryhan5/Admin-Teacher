@@ -1,28 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams } from 'react-router-dom';
 
 const TeacherDashboard = () => {
-  const { registerNumber } = useParams(); // Get register number from URL
-  const [teacherData, setTeacherData] = useState(null);
+  const [teachersData, setTeachersData] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch teacher data by registration number
-    const fetchTeacherData = async () => {
+    // Fetch data for all teachers
+    const fetchTeachersData = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/teacher/${registerNumber}`);
-        setTeacherData(response.data);
+        const response = await axios.get('http://localhost:5000/api/teachers'); // Adjust the endpoint to fetch all teachers
+        setTeachersData(response.data);
       } catch (error) {
-        setErrorMessage('Failed to fetch teacher data.');
+        setErrorMessage('Failed to fetch teachers data.');
       } finally {
         setIsLoading(false); // Ensure loading state is turned off
       }
     };
 
-    fetchTeacherData();
-  }, [registerNumber]);
+    fetchTeachersData();
+  }, []);
 
   if (isLoading) {
     return <div className="text-gray-500">Loading...</div>;
@@ -34,10 +32,10 @@ const TeacherDashboard = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-700 p-6">
-      <h1 className="text-3xl font-bold mb-4">Teacher Dashboard</h1>
-      {teacherData ? (
+      <h1 className="text-3xl font-bold mb-4">Teachers Dashboard</h1>
+      {teachersData.length > 0 ? (
         <div className="bg-white p-6 rounded shadow-md w-full max-w-2xl">
-          <h2 className="text-2xl font-bold mb-4">Registered Data</h2>
+          <h2 className="text-2xl font-bold mb-4">Registered Teachers</h2>
           <table className="min-w-full border-collapse border border-gray-300">
             <thead>
               <tr>
@@ -46,19 +44,24 @@ const TeacherDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {Object.entries(teacherData).map(([key, value]) => (
-                <tr key={key}>
-                  <td className="border p-2 font-semibold">{key}</td>
-                  <td className="border p-2">
-                    {Array.isArray(value) ? value.join(', ') : typeof value === 'object' && value !== null ? JSON.stringify(value) : value}
-                  </td>
-                </tr>
+              {teachersData.map((teacher, index) => (
+                <React.Fragment key={index}>
+                  {Object.entries(teacher).map(([key, value]) => (
+                    <tr key={`${index}-${key}`}>
+                      <td className="border p-2 font-semibold">{key}</td>
+                      <td className="border p-2">
+                        {Array.isArray(value) ? value.join(', ') : typeof value === 'object' && value !== null ? JSON.stringify(value) : value}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr><td colSpan="2" className="border p-2 bg-gray-200"></td></tr> {/* Separator between teachers */}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
         </div>
       ) : (
-        <div>No data available.</div>
+        <div>No teachers data available.</div>
       )}
     </div>
   );
